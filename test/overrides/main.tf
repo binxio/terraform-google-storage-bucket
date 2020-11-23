@@ -1,23 +1,30 @@
 locals {
   owner       = "myself"
   project     = "testapp"
-  company     = "mycompany"
+  company     = "mycomp"
   environment = var.environment
+
+  default_overrides = {
+    location = var.location
+  }
 
   buckets = {
     "functions" = {
-      location           = var.location
       versioning_enabled = true
       roles = {
-        # Not used atm, so skip this test
-        # "roles/storage.objectViewer"       = [format("group:%s@example.com", local.owner)]
-        "roles/storage.legacyObjectReader" = [format("serviceAccount:%s", var.sa_reader_email)]
-        "roles/storage.legacyBucketOwner"  = [format("serviceAccount:%s", var.sa_owner_email)]
+        "roles/storage.legacyObjectReader" = { format("%s", var.sa_reader_email) = "serviceAccount" }
+        "roles/storage.legacyBucketOwner"  = { format("%s", var.sa_owner_email) = "serviceAccount" }
+      }
+      logging = {
+        log_bucket = replace(lower(format("%s-%s-%s-logging", local.company, local.project, local.environment)), " ", "-")
       }
     }
     "processed" = {
-      location           = var.location
       versioning_enabled = false
+      retention_policy = {
+        is_locked        = true
+        retention_period = 1200
+      }
       lifecycle_rules = {
         "delete rule" = {
           action = {
@@ -29,6 +36,9 @@ locals {
           }
         }
       }
+      labels = {
+        "label_key" = "label_value"
+      }
     }
   }
 }
@@ -39,9 +49,10 @@ module "bucket" {
   owner       = local.owner
   environment = local.environment
   project     = local.project
-  prefix      = "mycomp"
+  prefix      = local.company
 
-  buckets = local.buckets
+  buckets         = local.buckets
+  bucket_defaults = merge(module.bucket.bucket_defaults, local.default_overrides)
 }
 
 output "map" {

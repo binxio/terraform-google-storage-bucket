@@ -20,7 +20,7 @@ locals {
         for setting in keys(settings) : setting => merge(
           {
             keytest = lookup(local.bucket_defaults, setting, "!TF_SETTINGTEST!") == "!TF_SETTINGTEST!" ? file(format("%sUnknown bucket variable assigned - bucket [%s] defines [%q] -- Please check for typos etc!%s", local.assert_head, bucket, setting, local.assert_foot)) : "ok"
-        })
+        }) if setting != "bucket_name"
       }
     })
   }

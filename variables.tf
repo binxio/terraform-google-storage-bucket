@@ -14,7 +14,7 @@ variable "prefix" {
 }
 
 variable "project" {
-  description = "Company Project name"
+  description = "Company project name."
   type        = string
 }
 
@@ -23,17 +23,17 @@ variable "environment" {
   type        = string
 }
 
+variable "gcp_project" {
+  description = "GCP Project ID override - this is normally not needed and should only be used in tf-projects."
+  type        = string
+  default     = null
+}
+
 #------------------------------------------------------------------------------------------------------------------------
 #
 # Bucket variables
 #
 #------------------------------------------------------------------------------------------------------------------------
-
-variable "buckets_depend_on" {
-  description = "Optional list of resources that need to be created before our bucket creation"
-  type        = any
-  default     = []
-}
 
 variable "buckets_force_destroy" {
   description = "When set to true, allows TFE to remove buckets that still contain objects"
@@ -42,17 +42,33 @@ variable "buckets_force_destroy" {
 }
 
 variable "buckets" {
-  description = "Map of buckets to be created. The key will be used for the bucket name so it should describe the bucket purpose. The value can be a map with the following keys to override default settings; location, storage_class, owner_email, versioning_enabled, bucket_policy_only."
+  description = <<EOF
+Map of buckets to be created. The key will be used for the bucket name so it should describe the bucket purpose. The value can be a map with the following keys to override default settings:
+  * owner
+  * location
+  * storage_class
+  * versioning_enabled
+	* retention_policy
+  * uniform_bucket_level_access
+  * lifecycle_rules
+	* logging
+  * roles
+  * labels
+EOF
   type        = any
 }
 
 variable "bucket_defaults" {
   description = "Default settings to be used for your buckets so you don't need to provide them for each bucket separately."
   type = object({
-    location           = string
-    storage_class      = string
-    versioning_enabled = bool
-    bucket_policy_only = bool
+    location                    = string
+    storage_class               = string
+    versioning_enabled          = bool
+    uniform_bucket_level_access = bool
+    retention_policy = object({
+      is_locked        = bool
+      retention_period = number
+    })
     lifecycle_rules = map(object({
       action = map(string)
       condition = object({
@@ -63,14 +79,13 @@ variable "bucket_defaults" {
         num_newer_versions    = number
       })
     }))
-    roles = map(list(string))
+    logging = object({
+      log_bucket        = string
+      log_object_prefix = string
+    })
+    roles  = map(map(string))
+    labels = map(string)
+    owner  = string
   })
-  default = {
-    location           = "europe-west4"
-    storage_class      = "REGIONAL"
-    versioning_enabled = true
-    bucket_policy_only = true
-    lifecycle_rules    = {}
-    roles              = null
-  }
+  default = null
 }

@@ -1,3 +1,1 @@
-provider "google-beta" {
-  region = "europe-west3"
-}
+../providers.tf

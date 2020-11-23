@@ -16,3 +16,14 @@ resource "google_service_account" "map" {
   display_name = format("%s Terraform Test", each.value)
   description  = "Service Account to test assignment of bucket roles"
 }
+
+module "log_bucket" {
+  source = "../"
+
+  owner       = local.owner
+  environment = local.environment
+  project     = local.project
+  prefix      = local.company
+
+  buckets = { "logging" = {} }
+}
