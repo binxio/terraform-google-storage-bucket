@@ -24,8 +24,7 @@ locals {
   }
 
   # Merge module defaults with the user provided defaults
-  bucket_defaults   = var.bucket_defaults == null ? local.module_bucket_defaults : merge(local.module_bucket_defaults, var.bucket_defaults)
-  buckets_depend_on = var.buckets_depend_on
+  bucket_defaults = var.bucket_defaults == null ? local.module_bucket_defaults : merge(local.module_bucket_defaults, var.bucket_defaults)
 
   labels = {
     "project" = substr(replace(lower(local.project), "/[^\\p{Ll}\\p{Lo}\\p{N}_-]+/", "_"), 0, 63)
