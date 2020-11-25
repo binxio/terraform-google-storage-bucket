@@ -52,6 +52,12 @@ If you want to see which tags are already there, you can use the following comma
 ```
 git tag --list
 ```
+Required APIs
+=============
+For the Storage Buckets to deploy, the following APIs should be enabled in your project:
+ * `iam.googleapis.com`
+ * `storage.googleapis.com`
+
 Testing
 =======
 This module comes with [terratest](https://github.com/gruntwork-io/terratest) scripts for both unit testing and integration testing.

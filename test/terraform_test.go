@@ -23,6 +23,8 @@ var terraformOptions *terraform.Options
 var tmpSaReaderEmail string
 var tmpSaOwnerEmail string
 var blacklistRegions []string
+var projectId string
+var region string
 
 func TestMain(m *testing.M) {
 	expectedEnvironment = fmt.Sprintf("terratest %s", strings.ToLower(random.UniqueId()))
@@ -46,7 +48,7 @@ func TestMain(m *testing.M) {
 // -------------------------------------------------------------------------------------------------------- //
 // Utility functions
 // -------------------------------------------------------------------------------------------------------- //
-func setTerraformOptions(dir string, region string, projectId string) {
+func setTerraformOptions(dir string) {
 	terraformOptions = &terraform.Options {
 		TerraformDir: dir,
 		// Pass the expectedEnvironment for tagging
@@ -89,9 +91,11 @@ func Clean() error {
 }
 
 func Test_Prereq(t *testing.T) {
-	projectId := gcp.GetGoogleProjectIDFromEnvVar(t)
-	region := gcp.GetRandomRegion(t, projectId, nil, blacklistRegions)
-	setTerraformOptions(".", region, projectId)
+	projectId = gcp.GetGoogleProjectIDFromEnvVar(t)
+	// Pick a random GCP region to test in. This helps ensure your code works in all regions.
+	region = gcp.GetRandomRegion(t, projectId, nil, blacklistRegions)
+
+	setTerraformOptions(".")
 	testPreq = t
 
 	terraform.InitAndApply(t, terraformOptions)
@@ -104,10 +108,6 @@ func Test_Prereq(t *testing.T) {
 // Unit Tests
 // -------------------------------------------------------------------------------------------------------- //
 func TestUT_Assertions(t *testing.T) {
-	// Pick a random GCP region to test in. This helps ensure your code works in all regions.
-	projectId := gcp.GetGoogleProjectIDFromEnvVar(t)
-	region := gcp.GetRandomRegion(t, projectId, nil, blacklistRegions)
-
 	expectedAssertUnknownVar := "Unknown bucket variable assigned"
 	//expectedAssertDestination := "Destination rules should have both or neither of account_id and access_control_translation set."
 	expectedAssertNameTooLong := "'s generated name is too long:"
@@ -115,7 +115,7 @@ func TestUT_Assertions(t *testing.T) {
 	//expectedAssertKMSKeyMissing := "KMS Encryption key id is required."
 	//expectedAssertBucketPolicies := "has both [bucket_access_policy_override] and [bucket_access_policy] defined, but only one can be applied"
 
-	setTerraformOptions("assertions", region, projectId)
+	setTerraformOptions("assertions")
 
 	out, err := terraform.InitAndPlanE(t, terraformOptions)
 
@@ -129,16 +129,12 @@ func TestUT_Assertions(t *testing.T) {
 }
 
 func TestUT_Defaults(t *testing.T) {
-	projectId := gcp.GetGoogleProjectIDFromEnvVar(t)
-	region := gcp.GetRandomRegion(t, projectId, nil, blacklistRegions)
-	setTerraformOptions("defaults", region, projectId)
+	setTerraformOptions("defaults")
 	terraform.InitAndPlan(t, terraformOptions)
 }
 
 func TestUT_Overrides(t *testing.T) {
-	projectId := gcp.GetGoogleProjectIDFromEnvVar(t)
-	region := gcp.GetRandomRegion(t, projectId, nil, blacklistRegions)
-	setTerraformOptions("overrides", region, projectId)
+	setTerraformOptions("overrides")
 	terraform.InitAndPlan(t, terraformOptions)
 }
 
@@ -147,9 +143,7 @@ func TestUT_Overrides(t *testing.T) {
 // -------------------------------------------------------------------------------------------------------- //
 
 func TestIT_Defaults(t *testing.T) {
-	projectId := gcp.GetGoogleProjectIDFromEnvVar(t)
-	region := gcp.GetRandomRegion(t, projectId, nil, blacklistRegions)
-	setTerraformOptions("defaults", region, projectId)
+	setTerraformOptions("defaults")
 
 	defer terraform.Destroy(t, terraformOptions)
 
@@ -168,9 +162,7 @@ func TestIT_Defaults(t *testing.T) {
 }
 
 func TestIT_Overrides(t *testing.T) {
-	projectId := gcp.GetGoogleProjectIDFromEnvVar(t)
-	region := gcp.GetRandomRegion(t, projectId, nil, blacklistRegions)
-	setTerraformOptions("overrides", region, projectId)
+	setTerraformOptions("overrides")
 
 	defer terraform.Destroy(t, terraformOptions)
 
@@ -194,8 +186,6 @@ func TestCleanup(t *testing.T) {
 
 	// Also clean up prereq. resources
 	fmt.Println("Cleaning our prereq resources...")
-	projectId := gcp.GetGoogleProjectIDFromEnvVar(t)
-	region := gcp.GetRandomRegion(t, projectId, nil, blacklistRegions)
-	setTerraformOptions(".", region, projectId)
+	setTerraformOptions(".")
 	terraform.Destroy(t, terraformOptions)
 }

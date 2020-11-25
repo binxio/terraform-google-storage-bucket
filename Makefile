@@ -15,8 +15,11 @@ check-error:
 	@if [ ! "${ENV_ERROR}" = "" ]; then echo -e "${ENV_ERROR}" && exit 1; fi
 
 check-env:
+	$(eval GOOGLE_AUTH = GOOGLE_IMPERSONATE_SERVICE_ACCOUNT=${GOOGLE_IMPERSONATE_SERVICE_ACCOUNT})
 ifeq ($(GOOGLE_CREDENTIALS), )
-	$(eval ENV_ERROR = $(ENV_ERROR)GOOGLE_CREDENTIALS is not set in environment.\n)
+ifeq ('$(GOOGLE_IMPERSONATE_SERVICE_ACCOUNT)', '')
+	$(eval ENV_ERROR = $(ENV_ERROR)Either GOOGLE_CREDENTIALS or GOOGLE_IMPERSONATE_SERVICE_ACCOUNT should be set but was not found in environment.\n)
+endif
 endif
 ifeq ($(GOOGLE_CLOUD_PROJECT), )
 	$(eval ENV_ERROR = $(ENV_ERROR)GOOGLE_CLOUD_PROJECT is not set in environment.\n)
@@ -28,10 +31,11 @@ test: check-gcp-env $(GOOGLE_CREDENTIALS)
 	docker run --rm -it \
 	-v ${GOOGLE_CREDENTIALS}:/root/$(GCP_CREDS_FILE):ro \
 	-v $(PWD):/go/src/app/ \
-	-e GOOGLE_APPLICATION_CREDENTIALS=/root/$(GCP_CREDS_FILE) \
 	-e GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT} \
+	-e GOOGLE_APPLICATION_CREDENTIALS=/root/$(GCP_CREDS_FILE) \
+	-e $(GOOGLE_AUTH) \
 	-e TF_VAR_owner=$(USER) \
-	binxio/terratest-runner-gcp:latest
+	binxio/terratest-runner-gcp:0.0.3
 
 readme:
 	docker run --rm -e MODULE=$(MODULE) --user $(USERID):$(USERGROUP) -it -v $(PWD):/go/src/app/$(MODULE) binxio/terraform-module-readme-generator:latest
